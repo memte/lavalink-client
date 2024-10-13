@@ -144,8 +144,8 @@ export class LavalinkNode {
      * player.node.rawRequest(`/loadtracks?identifier=Never gonna give you up`, (options) => options.method = "GET");
      * ```
      */
-async rawRequest(endpoint, modify) {
-    const options = {
+private async rawRequest(endpoint: string, modify?: ModifyRequest): Promise<{ response: Response, options: RequestInit & { path: string, extraQueryUrlParams?: URLSearchParams } }> {
+    const options: RequestInit & { path: string, extraQueryUrlParams?: URLSearchParams } = {
         path: `/${this.version}/${endpoint.replace(/^\//gm, "")}`,
         method: "GET",
         headers: {
@@ -162,7 +162,7 @@ async rawRequest(endpoint, modify) {
 
     const { signal, ...cloneableOptions } = options;
     const originalOptions = structuredClone(cloneableOptions);
-
+    
     delete options.path;
     delete options.extraQueryUrlParams;
 
@@ -170,6 +170,7 @@ async rawRequest(endpoint, modify) {
     this.calls++;
     return { response, options: originalOptions };
 }
+
 
     /**
      * Makes an API call to the Node. Should only be used for manual parsing like for not supported plugins

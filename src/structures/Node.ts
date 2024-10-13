@@ -144,34 +144,33 @@ export class LavalinkNode {
      * player.node.rawRequest(`/loadtracks?identifier=Never gonna give you up`, (options) => options.method = "GET");
      * ```
      */
-    private async rawRequest(endpoint: string, modify?: ModifyRequest) : Promise<{ response: Response, options: RequestInit & { path: string, extraQueryUrlParams?: URLSearchParams } }> {
-        const options: RequestInit & { path: string, extraQueryUrlParams?: URLSearchParams } = {
-            path: `/${this.version}/${endpoint.replace(/^\//gm, "")}`,
-            method: "GET",
-            headers: {
-                "Authorization": this.options.authorization
-            },
-            signal: this.options.requestSignalTimeoutMS && this.options.requestSignalTimeoutMS > 0 ? AbortSignal.timeout(this.options.requestSignalTimeoutMS) : undefined,
-        }
+async rawRequest(endpoint, modify) {
+    const options = {
+        path: `/${this.version}/${endpoint.replace(/^\//gm, "")}`,
+        method: "GET",
+        headers: {
+            "Authorization": this.options.authorization
+        },
+        signal: this.options.requestSignalTimeoutMS && this.options.requestSignalTimeoutMS > 0 ? AbortSignal.timeout(this.options.requestSignalTimeoutMS) : undefined,
+    };
 
-        modify?.(options);
+    modify?.(options);
 
-        const url = new URL(`${this.restAddress}${options.path}`);
-        url.searchParams.append("trace", "true");
+    const url = new URL(`${this.restAddress}${options.path}`);
+    url.searchParams.append("trace", "true");
+    const urlToUse = this.getRequestingUrl(url, options?.extraQueryUrlParams);
 
-        const urlToUse = this.getRequestingUrl(url, options?.extraQueryUrlParams);
+    const { signal, ...cloneableOptions } = options;
+    const originalOptions = structuredClone(cloneableOptions);
 
-        const originalOptions = structuredClone(options);
+    delete options.path;
+    delete options.extraQueryUrlParams;
 
-        delete options.path;
-        delete options.extraQueryUrlParams;
+    const response = await fetch(urlToUse, options);
+    this.calls++;
+    return { response, options: originalOptions };
+}
 
-        const response = await fetch(urlToUse, options);
-
-        this.calls++;
-
-        return { response, options: originalOptions };
-    }
     /**
      * Makes an API call to the Node. Should only be used for manual parsing like for not supported plugins
      * @param endpoint The endpoint that we will make the call to
